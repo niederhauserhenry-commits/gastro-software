@@ -1,0 +1,44 @@
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+
+// Läuft vor jeder Seite: erneuert die Anmeldung und schickt
+// nicht angemeldete Besucher zur Anmeldeseite.
+export async function proxy(request: NextRequest) {
+  let antwort = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
+          antwort = NextResponse.next({ request });
+          for (const { name, value, options } of cookiesToSet) {
+            antwort.cookies.set(name, value, options);
+          }
+        },
+      },
+    },
+  );
+
+  const { data } = await supabase.auth.getUser();
+  const pfad = request.nextUrl.pathname;
+  const oeffentlich = pfad.startsWith("/anmelden") || pfad.startsWith("/auth/");
+
+  if (!data.user && !oeffentlich) {
+    const ziel = request.nextUrl.clone();
+    ziel.pathname = "/anmelden";
+    ziel.search = "";
+    return NextResponse.redirect(ziel);
+  }
+  return antwort;
+}
+
+export const config = {
+  // Bilder, App-Symbole und das Manifest brauchen keine Anmeldung.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:png|jpg|svg|ico)$).*)"],
+};
