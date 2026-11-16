@@ -1,5 +1,40 @@
 @import "tailwindcss";
+@import "@fontsource-variable/atkinson-hyperlegible-next/wght.css";
+
+/* Farben und Schrift der Gastro-Software.
+   Leitbild: Tafel und Reservierungsbuch – dunkles Tafelgrün, helles Papier,
+   Senfgelb für alles, was Aufmerksamkeit braucht. */
+@theme {
+  --color-tafel: #1f3b33;
+  --color-tafel-tief: #142822;
+  --color-tafel-hell: #dfe9e3;
+  --color-kreide: #f1f5f2;
+  --color-papier: #ffffff;
+  --color-tinte: #15211d;
+  --color-stift: #55645e;
+  --color-linie: #d3dcd6;
+  --color-senf: #e3a61b;
+  --color-senf-hell: #fbf0cf;
+  --color-senf-tief: #6b4a00;
+  --color-warnrot: #b3261e;
+  --color-warnrot-hell: #fbe9e7;
+
+  --font-sans: "Atkinson Hyperlegible Next Variable", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--color-kreide);
+  color: var(--color-tinte);
+}
+
+/* Gut sichtbarer Rahmen, wenn man mit der Tastatur durch die Seite geht. */
+:focus-visible {
+  outline: 3px solid var(--color-senf);
+  outline-offset: 2px;
+}
+
+/* Zahlen in Uhrzeiten und Tabellen stehen sauber untereinander. */
+.ziffern {
+  font-variant-numeric: tabular-nums;
 }

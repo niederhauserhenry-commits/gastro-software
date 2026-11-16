@@ -1,77 +1,101 @@
 import Link from "next/link";
-import { abmelden } from "@/app/aktionen";
-import { aktuelleMitgliedschaft } from "@/lib/sitzung";
+import { connection } from "next/server";
+import { Kopfleiste, Seite } from "@/app/bausteine";
+import { AbmeldeKnopf } from "@/app/einstellungen/rahmen";
+import { Tagesleiste, jetztImRestaurant } from "@/app/tagesleiste";
+import { ladeEinstellungen, ladeOeffnungszeiten } from "@/lib/daten";
+import { aktuelleMitgliedschaft, istLeitung } from "@/lib/sitzung";
 import { texte } from "@/texte";
 
 // Startseite: höchstens fünf große Kacheln.
 // "ziel" fehlt, solange das Modul noch nicht gebaut ist.
 const kachelListe = [
-  { schluessel: "reservierungen", symbol: "📅", modul: "reservierungen", ziel: null },
-  { schluessel: "gaeste", symbol: "👤", modul: "gaeste", ziel: null },
-  { schluessel: "warteliste", symbol: "⏳", modul: "warteliste", ziel: null },
-  { schluessel: "feedback", symbol: "💬", modul: "feedback", ziel: null },
-  { schluessel: "team", symbol: "👥", modul: null, ziel: "/team" },
+  { schluessel: "reservierungen", modul: "reservierungen", ziel: null },
+  { schluessel: "gaeste", modul: "gaeste", ziel: null },
+  { schluessel: "warteliste", modul: "warteliste", ziel: null },
+  { schluessel: "feedback", modul: "feedback", ziel: null },
+  { schluessel: "einstellungen", modul: null, ziel: "/einstellungen" },
 ] as const;
 
 export default async function Startseite() {
   const t = texte();
   const ich = await aktuelleMitgliedschaft();
-  // Nur gebuchte Module erscheinen. Das Team gehört immer dazu.
+  const [einstellungen, zeiten] = await Promise.all([
+    ladeEinstellungen(ich.restaurantId),
+    ladeOeffnungszeiten(ich.restaurantId),
+  ]);
+  // Die Uhrzeit gilt für genau diesen Aufruf, die Seite wird nie vorab erzeugt.
+  await connection();
+  const jetzt = new Date();
+  const ort = jetztImRestaurant(einstellungen.zeitzone, jetzt);
+  const datum = new Intl.DateTimeFormat("de-DE", {
+    timeZone: einstellungen.zeitzone,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(jetzt);
+
+  // Nur gebuchte Module erscheinen. Die Einstellungen gehören immer dazu.
   const sichtbar = kachelListe.filter((k) => k.modul === null || ich.module.includes(k.modul));
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
-      <header className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-green-900">{ich.restaurantName}</p>
-          <h1 className="text-3xl font-bold">
-            {t.startseite.begruessung}, {ich.anzeigename}
-          </h1>
-          <p className="mt-1 text-stone-600">
-            {t.startseite.deineRolle}: {t.rollen[ich.rolle]}
-          </p>
-        </div>
-        <form action={abmelden}>
-          <button className="rounded-xl border border-stone-300 bg-white px-4 py-2 font-medium hover:bg-stone-100">
-            {t.allgemein.abmelden}
-          </button>
-        </form>
-      </header>
+    <>
+      <Kopfleiste restaurantName={ich.restaurantName} rechts={<AbmeldeKnopf />} />
+      <Seite>
+        <p className="text-stift">
+          {t.startseite.begruessung}, {ich.anzeigename} ({t.rollen[ich.rolle]})
+        </p>
+        <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl">{datum}</h1>
 
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {sichtbar.map((kachel) => {
-          const text = t.kacheln[kachel.schluessel];
-          const inhalt = (
-            <>
-              <span className="text-4xl" aria-hidden="true">
-                {kachel.symbol}
-              </span>
-              <span className="flex-1">
-                <span className="block text-xl font-semibold">{text.titel}</span>
-                <span className="block text-stone-600">{text.text}</span>
-              </span>
-              {!kachel.ziel && (
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
-                  {t.startseite.baldVerfuegbar}
+        <section className="mb-6 rounded-xl border border-linie bg-papier p-5 sm:p-6">
+          <Tagesleiste zeiten={zeiten} wochentag={ort.wochentag} jetztMinuten={ort.minuten} hatZeiten={zeiten.length > 0} />
+        </section>
+
+        {istLeitung(ich.rolle) && !ich.einrichtungAbgeschlossen && (
+          <Link
+            href="/einstellungen/oeffnungszeiten"
+            className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-senf bg-senf-hell p-5 text-senf-tief hover:bg-senf/30"
+          >
+            <span className="text-lg">{t.startseite.einrichtungOffen}</span>
+            <span className="rounded-lg bg-senf px-4 py-2 font-semibold text-tinte">{t.startseite.einrichtungFortsetzen}</span>
+          </Link>
+        )}
+
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {sichtbar.map((kachel) => {
+            const text = t.kacheln[kachel.schluessel];
+            const inhalt = (
+              <>
+                <span className="flex-1">
+                  <span className="block text-2xl font-bold tracking-tight">{text.titel}</span>
+                  <span className="block text-stift">{text.text}</span>
                 </span>
-              )}
-            </>
-          );
-          const klasse =
-            "flex min-h-28 items-center gap-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm";
-          return (
-            <li key={kachel.schluessel}>
-              {kachel.ziel ? (
-                <Link href={kachel.ziel} className={`${klasse} hover:border-green-800`}>
-                  {inhalt}
-                </Link>
-              ) : (
-                <div className={klasse}>{inhalt}</div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </main>
+                {kachel.ziel ? (
+                  <svg aria-hidden="true" viewBox="0 0 20 20" className="h-6 w-6 shrink-0 text-tafel" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M7.5 4.5 13 10l-5.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <span className="shrink-0 rounded-md bg-kreide px-2.5 py-1 text-sm font-medium text-stift">
+                    {t.startseite.baldVerfuegbar}
+                  </span>
+                )}
+              </>
+            );
+            const klasse = "flex min-h-24 items-center gap-4 rounded-xl border border-linie bg-papier px-5 py-4";
+            return (
+              <li key={kachel.schluessel} className={kachel.schluessel === "einstellungen" ? "sm:col-span-2" : ""}>
+                {kachel.ziel ? (
+                  <Link href={kachel.ziel} className={`${klasse} hover:border-tafel`}>
+                    {inhalt}
+                  </Link>
+                ) : (
+                  <div className={`${klasse} opacity-75`}>{inhalt}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </Seite>
+    </>
   );
 }

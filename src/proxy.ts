@@ -1,9 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { vorschauAktiv } from "@/lib/vorschau";
 
 // Läuft vor jeder Seite: erneuert die Anmeldung und schickt
 // nicht angemeldete Besucher zur Anmeldeseite.
 export async function proxy(request: NextRequest) {
+  if (vorschauAktiv()) return NextResponse.next({ request });
+
   let antwort = NextResponse.next({ request });
 
   const supabase = createServerClient(

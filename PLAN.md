@@ -39,11 +39,19 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - Rechte: Inhaber verwalten alle Rollen, Manager nur Mitarbeiter und Azubis. Leitung darf immer reservieren, alle anderen nur mit Freigabe. Ein Restaurant behält immer mindestens einen Inhaber.
 - Neue Konten müssen ihre E-Mail-Adresse bestätigen. Testkonten werden im Supabase-Dashboard mit „Auto Confirm User“ angelegt. Vor echten Kunden: eigenen Mailversand einrichten und in Supabase die Site URL auf die eigene Adresse setzen.
 
+## Gestaltung
+- Leitbild: Tafel und Reservierungsbuch. Dunkles Tafelgrün (`tafel`), helles Papier, Senfgelb (`senf`) nur für das, was Aufmerksamkeit braucht. Alle Farben stehen in `src/app/globals.css`.
+- Schrift: Atkinson Hyperlegible Next, gewählt für gute Lesbarkeit im Service und für ältere Augen. Liegt im Projekt, wird nicht von fremden Servern geladen.
+- Gemeinsame Bausteine (Kopfleiste, Knöpfe, Felder, Auswahl) in `src/app/bausteine.tsx`.
+- Startseite zeigt das Datum groß und die „Tagesleiste“ mit den heutigen Öffnungszeiten. In diese Leiste kommen später die Reservierungen des Tages.
+- Alle Datenabfragen stehen in `src/lib/daten.ts`.
+- Vorschau ohne Anmeldung nur in der Entwicklung: `VORSCHAU=1 npx next dev` zeigt alle Seiten mit Beispieldaten. Im echten Betrieb ist das immer aus.
+
 ## Fahrplan Phase 1
 - [x] 1. Grundgerüst (Projekt, Startseite, PWA-Manifest, Texte-Datei)
 - [x] 1b. Online stellen (GitHub + Vercel)
-- [ ] 2. Login und Rollen (Inhaber, Manager, Mitarbeiter, Azubi) – gebaut am 16.11.2026, Datenbank-Skript `supabase/migrations/0001_grundlage.sql` muss noch eingespielt und alles online getestet werden
-- [ ] 3. Einrichtungsassistent (Öffnungszeiten, Tische, Vergabe-Variante)
+- [x] 2. Login und Rollen (Inhaber, Manager, Mitarbeiter, Azubi) – von Henry am 16.11.2026 online getestet
+- [ ] 3. Einrichtungsassistent (Öffnungszeiten, Tische, Tischdauer, Warteliste, Löschfrist) – gebaut am 16.11.2026, Datenbank-Skript `0002_einrichtung.sql` ist eingespielt, Online-Test durch Henry offen
 - [ ] 4. Reservierungen mit Doppelbuchungsschutz
 - [ ] 5. Tagesansicht und Startseite mit Kacheln
 - [ ] 6. Gästeprofile mit Einwilligung

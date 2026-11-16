@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#14532d",
+  themeColor: "#1f3b33",
   width: "device-width",
   initialScale: 1,
 };
@@ -19,10 +19,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang={standardSprache} className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-stone-50 text-stone-900">
+      <body className="flex min-h-full flex-col">
         {/* Jede Seite hängt vom angemeldeten Nutzer ab und wird deshalb
             erst beim Aufruf erzeugt. Bis dahin erscheint der Ladehinweis. */}
-        <Suspense fallback={<p className="p-8 text-stone-600">{t.allgemein.laedt}</p>}>{children}</Suspense>
+        <Suspense fallback={<p className="p-8 text-stift">{t.allgemein.laedt}</p>}>{children}</Suspense>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { abmelden, restaurantAnlegen } from "@/app/aktionen";
-import { Meldung, feldKlasse, knopfKlasse } from "@/app/bausteine";
+import { Kopfleiste, Meldung, Seite, feldKlasse, knopfKlasse } from "@/app/bausteine";
 import { fehlerText } from "@/lib/fehler";
 import { datenbank } from "@/lib/supabase/server";
 import { texte } from "@/texte";
@@ -17,10 +17,11 @@ export default async function Einrichten({ searchParams }: PageProps<"/einrichte
   const fehler = fehlerText((await searchParams).fehler);
 
   return (
-    <main className="mx-auto w-full max-w-md flex-1 px-4 py-10">
-      <p className="text-sm font-medium text-green-900">{t.appName}</p>
-      <h1 className="mb-2 text-3xl font-bold">{t.einrichten.titel}</h1>
-      <p className="mb-6 text-stone-600">{t.einrichten.hinweis}</p>
+    <>
+      <Kopfleiste restaurantName={t.appName} />
+      <Seite schmal>
+      <h1 className="mb-2 text-3xl font-bold tracking-tight">{t.einrichten.titel}</h1>
+      <p className="mb-6 text-stift">{t.einrichten.hinweis}</p>
 
       {fehler && <Meldung art="fehler">{fehler}</Meldung>}
 
@@ -37,8 +38,9 @@ export default async function Einrichten({ searchParams }: PageProps<"/einrichte
       </form>
 
       <form action={abmelden} className="mt-8">
-        <button className="text-stone-600 underline">{t.allgemein.abmelden}</button>
+        <button className="text-stift underline underline-offset-4">{t.allgemein.abmelden}</button>
       </form>
-    </main>
+      </Seite>
+    </>
   );
 }
