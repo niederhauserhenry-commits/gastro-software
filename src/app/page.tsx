@@ -3,14 +3,14 @@ import { connection } from "next/server";
 import { Kopfleiste, Seite } from "@/app/bausteine";
 import { AbmeldeKnopf } from "@/app/einstellungen/rahmen";
 import { Tagesleiste, jetztImRestaurant } from "@/app/tagesleiste";
-import { ladeEinstellungen, ladeOeffnungszeiten } from "@/lib/daten";
+import { datumImRestaurant, istAktiv, ladeEinstellungen, ladeOeffnungszeiten, ladeReservierungen } from "@/lib/daten";
 import { aktuelleMitgliedschaft, istLeitung } from "@/lib/sitzung";
 import { texte } from "@/texte";
 
 // Startseite: höchstens fünf große Kacheln.
 // "ziel" fehlt, solange das Modul noch nicht gebaut ist.
 const kachelListe = [
-  { schluessel: "reservierungen", modul: "reservierungen", ziel: null },
+  { schluessel: "reservierungen", modul: "reservierungen", ziel: "/reservierungen" },
   { schluessel: "gaeste", modul: "gaeste", ziel: null },
   { schluessel: "warteliste", modul: "warteliste", ziel: null },
   { schluessel: "feedback", modul: "feedback", ziel: null },
@@ -27,6 +27,10 @@ export default async function Startseite() {
   // Die Uhrzeit gilt für genau diesen Aufruf, die Seite wird nie vorab erzeugt.
   await connection();
   const jetzt = new Date();
+  const heute = await ladeReservierungen(ich.restaurantId, datumImRestaurant(einstellungen.zeitzone, jetzt));
+  const aktive = heute.filter(istAktiv);
+  const gaeste = aktive.reduce((summe, x) => summe + x.personen, 0);
+  const naechste = aktive.filter((x) => x.status === "bestaetigt").slice(0, 3);
   const ort = jetztImRestaurant(einstellungen.zeitzone, jetzt);
   const datum = new Intl.DateTimeFormat("de-DE", {
     timeZone: einstellungen.zeitzone,
@@ -49,6 +53,29 @@ export default async function Startseite() {
 
         <section className="mb-6 rounded-xl border border-linie bg-papier p-5 sm:p-6">
           <Tagesleiste zeiten={zeiten} wochentag={ort.wochentag} jetztMinuten={ort.minuten} hatZeiten={zeiten.length > 0} />
+
+          <div className="mt-5 border-t border-linie pt-4">
+            <p className="ziffern text-lg">
+              <span className="font-semibold">{t.startseite.heuteReservierungen}:</span> {aktive.length}{" "}
+              {t.reservierungen.summeReservierungen}, {gaeste} {t.reservierungen.summeGaeste}
+            </p>
+            {naechste.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {naechste.map((x) => (
+                  <li key={x.id} className="flex gap-3">
+                    <span className="ziffern w-12 shrink-0 font-semibold">{x.von}</span>
+                    <span className="min-w-0 truncate">
+                      {x.gastName}
+                      <span className="ziffern text-stift">
+                        , {x.personen} {t.reservierungen.personen}
+                        {x.tischName ? `, ${x.tischName}` : ""}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </section>
 
         {istLeitung(ich.rolle) && !ich.einrichtungAbgeschlossen && (

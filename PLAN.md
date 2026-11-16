@@ -47,13 +47,21 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - Alle Datenabfragen stehen in `src/lib/daten.ts`.
 - Vorschau ohne Anmeldung nur in der Entwicklung: `VORSCHAU=1 npx next dev` zeigt alle Seiten mit Beispieldaten. Im echten Betrieb ist das immer aus.
 
+## Reservierungen (Schritt 4)
+- Einziger Buchungsweg ist die Datenbankfunktion `reservierung_anlegen`. Personal, Telefon-KI und Webseite nutzen sie alle.
+- Doppelbuchungen bei festen Tischen verhindert die Ausschlussregel `kein_doppelter_tisch` in der Tabelle `reservierungen`. Bei „Nur Plätze zählen“ prüft die Funktion die höchste gleichzeitige Belegung unter einer Sperre.
+- Getestet mit 30 gleichzeitigen Buchungen: Es wird nie mehr vergeben, als frei ist.
+- Tischdauer „offen“: Der Tisch ist bis zum Ende der Öffnungszeit belegt, bis das Personal „Tisch ist wieder frei“ drückt.
+- Buchungen außerhalb der Öffnungszeiten darf nur das Personal mit ausdrücklichem Haken anlegen, die Telefon-KI nie.
+- Offen für später: Reservierung verschieben oder bearbeiten (bisher stornieren und neu anlegen), Reservierungen nach Mitternacht erscheinen in der Tagesliste des Folgetags, Verknüpfung mit der Gästekartei (Schritt 6).
+
 ## Fahrplan Phase 1
 - [x] 1. Grundgerüst (Projekt, Startseite, PWA-Manifest, Texte-Datei)
 - [x] 1b. Online stellen (GitHub + Vercel)
 - [x] 2. Login und Rollen (Inhaber, Manager, Mitarbeiter, Azubi) – von Henry am 16.11.2026 online getestet
 - [ ] 3. Einrichtungsassistent (Öffnungszeiten, Tische, Tischdauer, Warteliste, Löschfrist) – gebaut am 16.11.2026, Datenbank-Skript `0002_einrichtung.sql` ist eingespielt, Online-Test durch Henry offen
-- [ ] 4. Reservierungen mit Doppelbuchungsschutz
-- [ ] 5. Tagesansicht und Startseite mit Kacheln
+- [ ] 4. Reservierungen mit Doppelbuchungsschutz – gebaut am 16.11.2026, Datenbank-Skript `0003_reservierungen.sql` ist eingespielt, Online-Test durch Henry offen
+- [ ] 5. Tagesansicht und Startseite mit Kacheln – zusammen mit Schritt 4 gebaut (Tagesliste, Tischplan als Zeitleiste, Startseite zeigt die heutigen Reservierungen)
 - [ ] 6. Gästeprofile mit Einwilligung
 - [ ] 7. SMS: Bestätigung und Erinnerung
 - [ ] 8. Warteliste
