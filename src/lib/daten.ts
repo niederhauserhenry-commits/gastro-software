@@ -161,6 +161,11 @@ export type Reservierung = {
   quelle: "personal" | "telefon_ki" | "web";
   anlass: string;
   notiz: string;
+  gastId: string | null;
+  // Besuche laut Kartei, Allergien und Zimmer, wenn der Gast im Haus wohnt.
+  besuche: number;
+  allergien: string;
+  zimmer: string;
 };
 
 export const istAktiv = (r: Reservierung) => r.status === "bestaetigt" || r.status === "angekommen";
@@ -194,7 +199,12 @@ export async function ladeReservierungen(restaurantId: string, datum: string): P
       quelle: Reservierung["quelle"] = "personal",
     ): Reservierung => {
       const min = (z: string) => Number(z.slice(0, 2)) * 60 + Number(z.slice(3, 5));
-      return { id, tischId, tischName, gastName, telefon: "0151 2345678", personen, von, bis, vonMinuten: min(von), bisMinuten: min(bis), status, quelle, anlass, notiz };
+      const kartei = vorschauGaeste.find((g) => g.name === gastName);
+      return {
+        id, tischId, tischName, gastName, telefon: kartei?.telefon ?? "0151 2345678", personen, von, bis,
+        vonMinuten: min(von), bisMinuten: min(bis), status, quelle, anlass, notiz,
+        gastId: kartei?.id ?? null, besuche: kartei?.besuche ?? 0, allergien: kartei?.allergien ?? "", zimmer: kartei?.zimmer ?? "",
+      };
     };
     return [
       r("1", "g1", "Tisch 1", "Familie Meyer", 4, "12:00", "14:00", "abgeschlossen"),
@@ -214,6 +224,7 @@ export async function ladeReservierungen(restaurantId: string, datum: string): P
     id: string; tisch_id: string | null; tisch_name: string | null; gast_name: string; telefon: string;
     personen: number; von: string; bis: string; von_minuten: number; bis_minuten: number;
     status: ReservierungStatus; quelle: Reservierung["quelle"]; anlass: string; notiz: string;
+    gast_id: string | null; besuche: number; allergien: string; zimmer: string;
   };
   return (data as Zeile[]).map((z) => ({
     id: z.id,
@@ -230,5 +241,156 @@ export async function ladeReservierungen(restaurantId: string, datum: string): P
     quelle: z.quelle,
     anlass: z.anlass,
     notiz: z.notiz,
+    gastId: z.gast_id,
+    besuche: z.besuche,
+    allergien: z.allergien,
+    zimmer: z.zimmer,
   }));
 }
+
+// Gästekartei ---------------------------------------------------------------
+
+export { gastStufe, type GastStufe } from "@/lib/gaststufe";
+
+export type GastFilter = "alle" | "stammgaeste" | "hausgaeste";
+export type GastEintrag = {
+  id: string;
+  name: string;
+  telefon: string;
+  besuche: number;
+  letzterBesuch: string | null;
+  allergien: string;
+  zimmer: string;
+};
+
+export type Gast = {
+  id: string;
+  name: string;
+  telefon: string;
+  email: string;
+  geburtstag: string | null;
+  vorlieben: string;
+  notizen: string;
+  allergien: string;
+  einwilligungAm: string | null;
+  erstelltAm: string;
+};
+
+export type Besuch = {
+  id: string;
+  datum: string;
+  von: string;
+  personen: number;
+  tischName: string | null;
+  status: ReservierungStatus;
+  anlass: string;
+  notiz: string;
+};
+
+export type Aufenthalt = { id: string; zimmer: string; anreise: string; abreise: string };
+
+const vorschauGaeste: (GastEintrag & { vorlieben: string; email: string; geburtstag: string | null; notizen: string })[] = [
+  { id: "00000000-0000-0000-0000-0000000000a1", name: "Frau Lüders", telefon: "0151 2233445", besuche: 14, letzterBesuch: "2026-11-02", allergien: "Haselnüsse", zimmer: "", vorlieben: "Trinkt gern einen trockenen Riesling. Sitzt am liebsten am Fenster (Tisch 2).", email: "anna.lueders@example.de", geburtstag: "1958-11-16", notizen: "Kommt meist mit ihrer Schwester. Mag es ruhig." },
+  { id: "00000000-0000-0000-0000-0000000000a2", name: "Kegelclub Hermannsburg", telefon: "05052 1234", besuche: 23, letzterBesuch: "2026-11-09", allergien: "", zimmer: "", vorlieben: "Jeden zweiten Montag. Erst eine Runde Pils, dann Schnitzel.", email: "", geburtstag: null, notizen: "" },
+  { id: "00000000-0000-0000-0000-0000000000a3", name: "Dr. Albers", telefon: "0171 9988776", besuche: 3, letzterBesuch: "2026-10-20", allergien: "", zimmer: "12", vorlieben: "Geschäftsessen, braucht eine Rechnung auf die Firma.", email: "", geburtstag: null, notizen: "" },
+  { id: "00000000-0000-0000-0000-0000000000a4", name: "Familie Schröder", telefon: "0160 5544332", besuche: 2, letzterBesuch: "2024-08-14", allergien: "Laktose (Tochter)", zimmer: "", vorlieben: "Rotwein: Spätburgunder von der Ahr.", email: "", geburtstag: null, notizen: "Waren vor zwei Jahren zur Konfirmation da." },
+  { id: "00000000-0000-0000-0000-0000000000a5", name: "Petersen", telefon: "0152 7766554", besuche: 0, letzterBesuch: null, allergien: "", zimmer: "7", vorlieben: "", email: "", geburtstag: null, notizen: "" },
+  { id: "00000000-0000-0000-0000-0000000000a6", name: "Familie Meyer", telefon: "0151 2345678", besuche: 6, letzterBesuch: "2026-11-16", allergien: "", zimmer: "", vorlieben: "Kinderteller ohne Pommes.", email: "", geburtstag: null, notizen: "" },
+];
+
+export async function ladeGaesteListe(restaurantId: string, suche: string, filter: GastFilter): Promise<GastEintrag[]> {
+  if (vorschauAktiv()) {
+    const s = suche.trim().toLowerCase();
+    return vorschauGaeste
+      .filter((g) => !s || g.name.toLowerCase().includes(s) || g.telefon.replace(/\D/g, "").includes(s.replace(/\D/g, "") || "#"))
+      .filter((g) => filter === "alle" || (filter === "stammgaeste" ? g.besuche >= 5 : g.zimmer !== ""));
+  }
+  const db = await datenbank();
+  const { data, error } = await db.rpc("gaeste_liste", { p_restaurant: restaurantId, p_suche: suche, p_filter: filter });
+  if (error) throw new Error(error.message);
+  type Zeile = { id: string; name: string; telefon: string; besuche: number; letzter_besuch: string | null; allergien: string; zimmer: string };
+  return (data as Zeile[]).map((z) => ({
+    id: z.id,
+    name: z.name,
+    telefon: z.telefon,
+    besuche: z.besuche,
+    letzterBesuch: z.letzter_besuch,
+    allergien: z.allergien,
+    zimmer: z.zimmer,
+  }));
+}
+
+export async function ladeGast(id: string): Promise<Gast | null> {
+  if (vorschauAktiv()) {
+    const g = vorschauGaeste.find((x) => x.id === id);
+    return g
+      ? { id: g.id, name: g.name, telefon: g.telefon, email: g.email, geburtstag: g.geburtstag, vorlieben: g.vorlieben, notizen: g.notizen, allergien: g.allergien, einwilligungAm: g.allergien ? "2025-03-02T18:00:00Z" : null, erstelltAm: "2023-05-12T10:00:00Z" }
+      : null;
+  }
+  const db = await datenbank();
+  const { data, error } = await db
+    .from("gaeste")
+    .select("id, name, telefon, email, geburtstag, vorlieben, notizen, allergien, allergien_einwilligung_am, erstellt_am")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return {
+    id: data.id,
+    name: data.name,
+    telefon: data.telefon,
+    email: data.email,
+    geburtstag: data.geburtstag,
+    vorlieben: data.vorlieben,
+    notizen: data.notizen,
+    allergien: data.allergien,
+    einwilligungAm: data.allergien_einwilligung_am,
+    erstelltAm: data.erstellt_am,
+  };
+}
+
+export async function ladeBesuche(gastId: string): Promise<Besuch[]> {
+  if (vorschauAktiv()) {
+    const tage = ["2026-11-02", "2026-09-27", "2026-08-15", "2026-06-06", "2026-04-18", "2025-12-24"];
+    return tage.map((datum, i) => ({
+      id: `b${i}`, datum, von: i === 5 ? "12:00" : "18:30", personen: i === 5 ? 6 : 2, tischName: "Tisch 2",
+      status: i === 3 ? "storniert" : "abgeschlossen", anlass: i === 5 ? "Heiligabend" : i === 2 ? "Geburtstag der Schwester" : "",
+      notiz: i === 0 ? "Riesling war ausverkauft, hat Grauburgunder genommen" : "",
+    }));
+  }
+  const db = await datenbank();
+  const { data, error } = await db.rpc("gast_besuche", { p_gast: gastId });
+  if (error) throw new Error(error.message);
+  type Zeile = { id: string; datum: string; von: string; personen: number; tisch_name: string | null; status: ReservierungStatus; anlass: string; notiz: string };
+  return (data as Zeile[]).map((z) => ({
+    id: z.id, datum: z.datum, von: z.von, personen: z.personen, tischName: z.tisch_name, status: z.status, anlass: z.anlass, notiz: z.notiz,
+  }));
+}
+
+export async function ladeAufenthalte(gastId: string): Promise<Aufenthalt[]> {
+  if (vorschauAktiv()) {
+    const g = vorschauGaeste.find((x) => x.id === gastId);
+    return g?.zimmer ? [{ id: "a1", zimmer: g.zimmer, anreise: "2026-11-15", abreise: "2026-11-19" }] : [];
+  }
+  const db = await datenbank();
+  const { data, error } = await db
+    .from("aufenthalte")
+    .select("id, zimmer, anreise, abreise")
+    .eq("gast_id", gastId)
+    .order("anreise", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// "2026-11-16" wird zu "16. November 2026" (oder ohne Jahr).
+export function datumLang(datum: string, mitJahr = true) {
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "numeric",
+    month: "long",
+    ...(mitJahr ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  }).format(new Date(`${datum.slice(0, 10)}T12:00:00Z`));
+}
+
+export const istUuid = (wert: unknown): wert is string =>
+  typeof wert === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(wert);

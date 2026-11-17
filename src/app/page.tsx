@@ -11,7 +11,7 @@ import { texte } from "@/texte";
 // "ziel" fehlt, solange das Modul noch nicht gebaut ist.
 const kachelListe = [
   { schluessel: "reservierungen", modul: "reservierungen", ziel: "/reservierungen" },
-  { schluessel: "gaeste", modul: "gaeste", ziel: null },
+  { schluessel: "gaeste", modul: "gaeste", ziel: "/gaeste" },
   { schluessel: "warteliste", modul: "warteliste", ziel: null },
   { schluessel: "feedback", modul: "feedback", ziel: null },
   { schluessel: "einstellungen", modul: null, ziel: "/einstellungen" },

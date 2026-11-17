@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { gaesteSuchen } from "@/app/gaeste/aktionen";
+import { GastMarken } from "@/app/gaeste/marken";
 import { feldKlasse, knopfKlasse, knopfZweitKlasse } from "@/app/klassen";
 import { reservierungAnlegen, type FormularZustand } from "@/app/reservierungen/aktionen";
-import type { Durchgang, Oeffnungszeit, Tisch } from "@/lib/daten";
+import type { Durchgang, GastEintrag, Oeffnungszeit, Tisch } from "@/lib/daten";
 import { texte } from "@/texte";
 
 const minuten = (zeit: string) => Number(zeit.slice(0, 2)) * 60 + Number(zeit.slice(3, 5));
@@ -49,6 +51,7 @@ export function ReservierungsFormular({
   tische,
   mitDurchgaengen,
   mitTischen,
+  startGast,
 }: {
   startDatum: string;
   heute: string;
@@ -57,12 +60,39 @@ export function ReservierungsFormular({
   tische: Tisch[];
   mitDurchgaengen: boolean;
   mitTischen: boolean;
+  startGast: GastEintrag | null;
 }) {
   const t = texte();
   const f = t.reservierungen.formular;
   const [zustand, absenden, laeuft] = useActionState<FormularZustand, FormData>(reservierungAnlegen, { fehler: null });
   const [datum, setDatum] = useState(startDatum);
   const [ausserhalb, setAusserhalb] = useState(false);
+  const [gast, setGast] = useState<GastEintrag | null>(startGast);
+  const [name, setName] = useState("");
+  const [telefon, setTelefon] = useState(startGast?.telefon ?? "");
+  const [treffer, setTreffer] = useState<GastEintrag[]>([]);
+
+  // Während der Eingabe von Name oder Telefon in der Kartei nachsehen.
+  const suchbegriff = gast ? "" : telefon.replace(/\D/g, "").length >= 4 ? telefon : name.trim().length >= 2 ? name : "";
+  useEffect(() => {
+    if (!suchbegriff) return;
+    let aktuell = true;
+    const zeitgeber = setTimeout(async () => {
+      const ergebnis = await gaesteSuchen(suchbegriff);
+      if (aktuell) setTreffer(ergebnis);
+    }, 300);
+    return () => {
+      aktuell = false;
+      clearTimeout(zeitgeber);
+    };
+  }, [suchbegriff]);
+  const sichtbareTreffer = suchbegriff ? treffer : [];
+
+  const uebernehmen = (g: GastEintrag) => {
+    setGast(g);
+    setTelefon(g.telefon);
+    setTreffer([]);
+  };
 
   const zeiten = freieZeiten(datum, oeffnungszeiten, ausserhalb);
   const tag = wochentagVon(datum);
@@ -116,16 +146,67 @@ export function ReservierungsFormular({
         </label>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <label className="block font-medium">
-          {f.name}
-          <input name="name" required maxLength={80} autoComplete="off" className={feldKlasse} />
-        </label>
-        <label className="block font-medium">
-          {f.telefon} <span className="font-normal text-stift">({f.optional})</span>
-          <input name="telefon" type="tel" maxLength={40} autoComplete="off" className={`${feldKlasse} ziffern`} />
-        </label>
-      </div>
+      {gast ? (
+        <div className="rounded-xl border border-tafel/30 bg-tafel-hell/60 p-4">
+          <input type="hidden" name="gast" value={gast.id} />
+          <input type="hidden" name="name" value={gast.name} />
+          <p className="text-sm text-stift">{f.gastGewaehlt}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xl font-semibold">{gast.name}</span>
+            <GastMarken besuche={gast.besuche} zimmer={gast.zimmer} allergien={gast.allergien} />
+          </div>
+          <div className="mt-3 grid items-end gap-3 sm:grid-cols-[1fr_auto]">
+            <label className="block font-medium">
+              {f.telefon} <span className="font-normal text-stift">({f.optional})</span>
+              <input name="telefon" type="tel" maxLength={40} value={telefon} onChange={(e) => setTelefon(e.target.value)} autoComplete="off" className={`${feldKlasse} ziffern`} />
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setGast(null);
+                setTelefon("");
+              }}
+              className={`${knopfZweitKlasse} py-3`}
+            >
+              {f.anderenGast}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="block font-medium">
+              {f.name}
+              <input name="name" required maxLength={80} value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" className={feldKlasse} />
+            </label>
+            <label className="block font-medium">
+              {f.telefon} <span className="font-normal text-stift">({f.optional})</span>
+              <input name="telefon" type="tel" maxLength={40} value={telefon} onChange={(e) => setTelefon(e.target.value)} autoComplete="off" className={`${feldKlasse} ziffern`} />
+            </label>
+          </div>
+          {sichtbareTreffer.length > 0 && (
+            <div className="mt-3 rounded-xl border border-linie bg-kreide p-3" aria-live="polite">
+              <p className="mb-2 px-1 text-sm font-semibold text-stift">{f.gastSuche}</p>
+              <ul className="space-y-2">
+                {sichtbareTreffer.map((g) => (
+                  <li key={g.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-papier px-3 py-2">
+                    <span className="min-w-0">
+                      <span className="mr-2 font-semibold">{g.name}</span>
+                      <span className="ziffern text-stift">{g.telefon}</span>
+                      <span className="mt-1 flex flex-wrap gap-1.5">
+                        <GastMarken besuche={g.besuche} zimmer={g.zimmer} allergien={g.allergien} />
+                      </span>
+                    </span>
+                    <button type="button" onClick={() => uebernehmen(g)} className={`${knopfZweitKlasse} px-4 py-2`}>
+                      {f.gastWaehlen}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {mitTischen && (
         <label className="block font-medium">

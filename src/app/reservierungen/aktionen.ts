@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { datumGueltig } from "@/lib/daten";
+import { datumGueltig, istUuid } from "@/lib/daten";
 import { fehlerCode } from "@/lib/fehler";
 import { aktuelleMitgliedschaft } from "@/lib/sitzung";
 import { datenbank } from "@/lib/supabase/server";
@@ -41,6 +41,7 @@ export async function reservierungAnlegen(_vorher: FormularZustand, form: FormDa
     p_notiz: text(form, "notiz").slice(0, 500),
     p_quelle: "personal",
     p_ausserhalb: form.get("ausserhalb") === "on",
+    p_gast: istUuid(text(form, "gast")) ? text(form, "gast") : null,
   });
   if (error) return { fehler: fehlerCode(error.message) };
 

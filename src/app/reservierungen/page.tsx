@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Kopfleiste, Meldung, Seite, Zurueck, feldKlasse, knopfKlasse, knopfLoeschKlasse, knopfZweitKlasse } from "@/app/bausteine";
 import { AbmeldeKnopf } from "@/app/einstellungen/rahmen";
+import { GastMarken } from "@/app/gaeste/marken";
 import { statusSetzen } from "@/app/reservierungen/aktionen";
 import { Tischplan } from "@/app/reservierungen/tischplan";
 import { jetztImRestaurant } from "@/app/tagesleiste";
@@ -146,9 +147,18 @@ function Zeile({ x, datum, darfAendern, mitTischen }: { x: Reservierung; datum: 
       </p>
 
       <div className="min-w-0">
-        <p className={`text-xl font-semibold ${x.status === "storniert" || x.status === "nicht_erschienen" ? "text-stift line-through" : ""}`}>
-          {x.gastName}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className={`text-xl font-semibold ${x.status === "storniert" || x.status === "nicht_erschienen" ? "text-stift line-through" : ""}`}>
+            {x.gastId ? (
+              <Link href={`/gaeste/${x.gastId}`} className="underline decoration-linie decoration-2 underline-offset-4 hover:decoration-tafel">
+                {x.gastName}
+              </Link>
+            ) : (
+              x.gastName
+            )}
+          </p>
+          {!vorbei && <GastMarken besuche={x.besuche} zimmer={x.zimmer} allergien={x.allergien} nurWichtige />}
+        </div>
         <p className="ziffern text-stift">
           {x.personen} {r.personen}
           {mitTischen && `, ${x.tischName ?? r.ohneTisch}`}

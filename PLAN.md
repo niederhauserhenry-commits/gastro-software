@@ -55,6 +55,16 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - Buchungen außerhalb der Öffnungszeiten darf nur das Personal mit ausdrücklichem Haken anlegen, die Telefon-KI nie.
 - Offen für später: Reservierung verschieben oder bearbeiten (bisher stornieren und neu anlegen), Reservierungen nach Mitternacht erscheinen in der Tagesliste des Folgetags, Verknüpfung mit der Gästekartei (Schritt 6).
 
+## Gästekartei (Schritt 6)
+- Jede Reservierung legt automatisch eine Karteikarte an oder verknüpft eine bestehende: gewählter Gast aus der Suche, sonst gleiche Telefonnummer (0151…, +49151… und 0049151… gelten als gleich), sonst neue Karte.
+- Kennzeichen: ab 2 Besuchen „Wiederkehrend“, ab 5 „Stammgast“. Ein Besuch zählt nur, wenn die Gäste wirklich da waren (Status „angekommen“ oder „abgeschlossen“).
+- Hausgäste: Aufenthalt mit Zimmer, An- und Abreise auf der Karteikarte. Eigener Reiter „Hausgäste“ in der Gästeliste.
+- Allergien nur mit dokumentierter Einwilligung (Datum wird gespeichert, die Datenbank erzwingt das). Werden die Allergien gelöscht, verfällt die Einwilligung.
+- Rechte: alle im Team lesen, wer reservieren darf pflegt, nur die Leitung löscht Karteikarten.
+- Löschfrist: Jede Nacht um 03:17 Uhr (UTC) löscht `gaeste_aufraeumen` Karteikarten ohne Besuch innerhalb der Frist und anonymisiert alte Reservierungen. Eingeplant über pg_cron in Supabase.
+- Offen für später: doppelte Karteikarten zusammenführen, Geburtstagshinweis in der Tagesliste, Datenauskunft als Export (Schritt 11).
+- Alle Datenbank-Tests lokal: `supabase/tests/alle.sh`.
+
 ## Fahrplan Phase 1
 - [x] 1. Grundgerüst (Projekt, Startseite, PWA-Manifest, Texte-Datei)
 - [x] 1b. Online stellen (GitHub + Vercel)
@@ -62,7 +72,7 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - [ ] 3. Einrichtungsassistent (Öffnungszeiten, Tische, Tischdauer, Warteliste, Löschfrist) – gebaut am 16.11.2026, Datenbank-Skript `0002_einrichtung.sql` ist eingespielt, Online-Test durch Henry offen
 - [ ] 4. Reservierungen mit Doppelbuchungsschutz – gebaut am 16.11.2026, Datenbank-Skript `0003_reservierungen.sql` ist eingespielt, Online-Test durch Henry offen
 - [ ] 5. Tagesansicht und Startseite mit Kacheln – zusammen mit Schritt 4 gebaut (Tagesliste, Tischplan als Zeitleiste, Startseite zeigt die heutigen Reservierungen)
-- [ ] 6. Gästeprofile mit Einwilligung
+- [ ] 6. Gästekartei mit Einwilligung für Allergien – gebaut am 17.11.2026, Datenbank-Skript `0004_gaestekartei.sql` ist eingespielt, Online-Test durch Henry offen
 - [ ] 7. SMS: Bestätigung und Erinnerung
 - [ ] 8. Warteliste
 - [ ] 9. Telefon-KI anbinden
