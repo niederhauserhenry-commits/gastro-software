@@ -14,6 +14,10 @@ export type Einstellungen = {
   wartelisteFristMinuten: number;
   loeschfristMonate: number;
   zeitzone: string;
+  nachrichtenModus: "aus" | "test";
+  erinnerungStunden: number;
+  vorlageBestaetigung: string;
+  vorlageErinnerung: string;
 };
 
 export type Oeffnungszeit = { wochentag: number; von: string; bis: string };
@@ -41,13 +45,17 @@ export async function ladeEinstellungen(restaurantId: string): Promise<Einstellu
       wartelisteFristMinuten: 15,
       loeschfristMonate: 36,
       zeitzone: "Europe/Berlin",
+      nachrichtenModus: "test",
+      erinnerungStunden: 24,
+      vorlageBestaetigung: "{restaurant}: Ihr Tisch am {datum} um {uhrzeit} Uhr für {personen} Pers. ist reserviert. Absagen: {link}",
+      vorlageErinnerung: "{restaurant}: Wir erwarten Sie am {datum} um {uhrzeit} Uhr. Verhindert? Hier absagen: {link}",
     };
   }
   const db = await datenbank();
   const { data, error } = await db
     .from("restaurants")
     .select(
-      "vergabe_modus, plaetze_gesamt, dauer_modus, standard_dauer_minuten, warteliste_modus, warteliste_frist_minuten, loeschfrist_monate, zeitzone",
+      "vergabe_modus, plaetze_gesamt, dauer_modus, standard_dauer_minuten, warteliste_modus, warteliste_frist_minuten, loeschfrist_monate, zeitzone, nachrichten_modus, erinnerung_stunden, vorlage_bestaetigung, vorlage_erinnerung",
     )
     .eq("id", restaurantId)
     .single();
@@ -61,6 +69,10 @@ export async function ladeEinstellungen(restaurantId: string): Promise<Einstellu
     wartelisteFristMinuten: data.warteliste_frist_minuten,
     loeschfristMonate: data.loeschfrist_monate,
     zeitzone: data.zeitzone,
+    nachrichtenModus: data.nachrichten_modus,
+    erinnerungStunden: data.erinnerung_stunden,
+    vorlageBestaetigung: data.vorlage_bestaetigung,
+    vorlageErinnerung: data.vorlage_erinnerung,
   };
 }
 
@@ -166,6 +178,7 @@ export type Reservierung = {
   besuche: number;
   allergien: string;
   zimmer: string;
+  abgesagtVomGast: boolean;
 };
 
 export const istAktiv = (r: Reservierung) => r.status === "bestaetigt" || r.status === "angekommen";
@@ -204,6 +217,7 @@ export async function ladeReservierungen(restaurantId: string, datum: string): P
         id, tischId, tischName, gastName, telefon: kartei?.telefon ?? "0151 2345678", personen, von, bis,
         vonMinuten: min(von), bisMinuten: min(bis), status, quelle, anlass, notiz,
         gastId: kartei?.id ?? null, besuche: kartei?.besuche ?? 0, allergien: kartei?.allergien ?? "", zimmer: kartei?.zimmer ?? "",
+        abgesagtVomGast: status === "storniert" && quelle === "personal",
       };
     };
     return [
@@ -224,7 +238,7 @@ export async function ladeReservierungen(restaurantId: string, datum: string): P
     id: string; tisch_id: string | null; tisch_name: string | null; gast_name: string; telefon: string;
     personen: number; von: string; bis: string; von_minuten: number; bis_minuten: number;
     status: ReservierungStatus; quelle: Reservierung["quelle"]; anlass: string; notiz: string;
-    gast_id: string | null; besuche: number; allergien: string; zimmer: string;
+    gast_id: string | null; besuche: number; allergien: string; zimmer: string; abgesagt_vom_gast: boolean;
   };
   return (data as Zeile[]).map((z) => ({
     id: z.id,
@@ -245,6 +259,7 @@ export async function ladeReservierungen(restaurantId: string, datum: string): P
     besuche: z.besuche,
     allergien: z.allergien,
     zimmer: z.zimmer,
+    abgesagtVomGast: z.abgesagt_vom_gast,
   }));
 }
 
@@ -394,3 +409,47 @@ export function datumLang(datum: string, mitJahr = true) {
 
 export const istUuid = (wert: unknown): wert is string =>
   typeof wert === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(wert);
+
+// Nachrichten an Gäste ---------------------------------------------------------
+
+export type NachrichtStatus = "wartet" | "gesendet" | "testmodus" | "abgebrochen" | "fehler";
+export type Nachricht = {
+  id: string;
+  art: "bestaetigung" | "erinnerung";
+  an: string;
+  text: string;
+  sendenAb: string;
+  status: NachrichtStatus;
+  gastName: string;
+};
+
+export async function ladeNachrichten(restaurantId: string): Promise<Nachricht[]> {
+  if (vorschauAktiv()) {
+    const link = "https://gastro-software.vercel.app/r/3f9a1c07b2d4";
+    return [
+      { id: "n1", art: "bestaetigung", an: "+491512233445", gastName: "Frau Lüders", status: "testmodus", sendenAb: "2026-11-17T17:02:00Z",
+        text: `Gasthaus Zur Linde: Ihr Tisch am 21.11. um 19:00 Uhr für 2 Pers. ist reserviert. Absagen: ${link}` },
+      { id: "n2", art: "erinnerung", an: "+491512233445", gastName: "Frau Lüders", status: "wartet", sendenAb: "2026-11-20T18:00:00Z",
+        text: `Gasthaus Zur Linde: Wir erwarten Sie am 21.11. um 19:00 Uhr. Verhindert? Hier absagen: ${link}` },
+      { id: "n3", art: "erinnerung", an: "+491605544332", gastName: "Familie Schröder", status: "abgebrochen", sendenAb: "2026-11-17T18:00:00Z",
+        text: `Gasthaus Zur Linde: Wir erwarten Sie am 18.11. um 19:00 Uhr. Verhindert? Hier absagen: ${link}` },
+    ];
+  }
+  const db = await datenbank();
+  const { data, error } = await db
+    .from("nachrichten")
+    .select("id, art, an, text, senden_ab, status, reservierungen(gast_name)")
+    .eq("restaurant_id", restaurantId)
+    .order("senden_ab", { ascending: false })
+    .limit(100);
+  if (error) throw new Error(error.message);
+  return data.map((n) => ({
+    id: n.id,
+    art: n.art,
+    an: n.an,
+    text: n.text,
+    sendenAb: n.senden_ab,
+    status: n.status,
+    gastName: (n.reservierungen as unknown as { gast_name: string } | null)?.gast_name ?? "",
+  }));
+}

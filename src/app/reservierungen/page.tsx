@@ -178,7 +178,9 @@ function Zeile({ x, datum, darfAendern, mitTischen }: { x: Reservierung; datum: 
       </div>
 
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <span className={`rounded-md px-2.5 py-1 text-sm font-semibold ${statusFarbe[x.status]}`}>{r.status[x.status]}</span>
+        <span className={`rounded-md px-2.5 py-1 text-sm font-semibold ${statusFarbe[x.status]}`}>
+          {x.abgesagtVomGast ? r.vomGastAbgesagt : r.status[x.status]}
+        </span>
         {darfAendern && x.status === "bestaetigt" && (
           <>
             {knopf("angekommen", r.angekommen, `${knopfKlasse} px-4 py-2`)}

@@ -207,3 +207,31 @@ export async function wartelisteSpeichern(form: FormData) {
   revalidatePath("/", "layout");
   redirect("/einstellungen?fertig=1");
 }
+
+export async function nachrichtenSpeichern(form: FormData) {
+  const ich = await leitungErforderlich();
+  const modus = text(form, "nachrichtenModus");
+  const stunden = zahl(form, "erinnerungStunden");
+  const bestaetigung = text(form, "vorlageBestaetigung");
+  const erinnerung = text(form, "vorlageErinnerung");
+  const ziel = "/einstellungen/nachrichten";
+  if (modus !== "aus" && modus !== "test") redirect(`${ziel}?fehler=EINGABE_FEHLT`);
+  if (!(stunden >= 1 && stunden <= 72)) redirect(`${ziel}?fehler=ZAHL_UNGUELTIG`);
+  if (bestaetigung.length < 10 || bestaetigung.length > 300 || erinnerung.length < 10 || erinnerung.length > 300) {
+    redirect(`${ziel}?fehler=EINGABE_FEHLT`);
+  }
+
+  const db = await datenbank();
+  const { error } = await db
+    .from("restaurants")
+    .update({
+      nachrichten_modus: modus,
+      erinnerung_stunden: stunden,
+      vorlage_bestaetigung: bestaetigung,
+      vorlage_erinnerung: erinnerung,
+    })
+    .eq("id", ich.restaurantId);
+  if (error) redirect(`${ziel}?fehler=${dbFehler(error)}`);
+  revalidatePath("/", "layout");
+  redirect(`${ziel}?ok=1`);
+}

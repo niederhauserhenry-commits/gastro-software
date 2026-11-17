@@ -65,6 +65,14 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - Offen für später: doppelte Karteikarten zusammenführen, Geburtstagshinweis in der Tagesliste, Datenauskunft als Export (Schritt 11).
 - Alle Datenbank-Tests lokal: `supabase/tests/alle.sh`.
 
+## Nachrichten an Gäste (Schritt 7)
+- Neue Reservierung mit Telefonnummer: Bestätigung sofort, Erinnerung einstellbar 2 bis 48 Stunden vorher (nur wenn mehr als 2 Stunden Abstand).
+- Beide SMS enthalten den Absage-Link `https://gastro-software.vercel.app/r/<schlüssel>`. Die Seite funktioniert ohne Anmeldung; der zwölfstellige Schlüssel ist der Nachweis. Sagt der Gast ab, ist der Tisch sofort frei, und die Tagesliste zeigt „Vom Gast abgesagt“.
+- Storno, No-Show oder „Gäste sind da“: noch nicht verschickte Nachrichten entfallen.
+- Texte pro Restaurant einstellbar mit Platzhaltern und Live-Vorschau; Standardtexte bleiben unter 160 Zeichen.
+- Versand: `nachrichten_verarbeiten` läuft jede Minute (pg_cron). Solange kein Anbieter angebunden ist, werden fällige Nachrichten als „Testmodus, nicht verschickt“ markiert.
+- Nächster Schritt dafür: Henry legt ein Konto bei einem SMS-Anbieter an (z. B. seven.io aus Deutschland) und hinterlegt den API-Schlüssel selbst im Supabase-Tresor (Vault). Danach ruft `nachrichten_verarbeiten` den Anbieter über pg_net auf. Die Adresse der Webseite steht in `app_konfiguration`.
+
 ## Fahrplan Phase 1
 - [x] 1. Grundgerüst (Projekt, Startseite, PWA-Manifest, Texte-Datei)
 - [x] 1b. Online stellen (GitHub + Vercel)
@@ -73,7 +81,7 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - [ ] 4. Reservierungen mit Doppelbuchungsschutz – gebaut am 16.11.2026, Datenbank-Skript `0003_reservierungen.sql` ist eingespielt, Online-Test durch Henry offen
 - [ ] 5. Tagesansicht und Startseite mit Kacheln – zusammen mit Schritt 4 gebaut (Tagesliste, Tischplan als Zeitleiste, Startseite zeigt die heutigen Reservierungen)
 - [ ] 6. Gästekartei mit Einwilligung für Allergien – gebaut am 17.11.2026, Datenbank-Skript `0004_gaestekartei.sql` ist eingespielt, Online-Test durch Henry offen
-- [ ] 7. SMS: Bestätigung und Erinnerung
+- [ ] 7. Nachrichten an Gäste: Bestätigung, Erinnerung, Absage-Link – gebaut am 18.11.2026 im Testmodus, Skript `0005_nachrichten.sql` eingespielt. Offen: SMS-Anbieter anbinden (Henry legt das Konto an), Online-Test
 - [ ] 8. Warteliste
 - [ ] 9. Telefon-KI anbinden
 - [ ] 10. Feedback-Modul mit Wochenbericht
