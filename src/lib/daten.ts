@@ -659,3 +659,20 @@ export async function kiBereit(): Promise<boolean> {
   const { data } = await db.rpc("ki_bereit");
   return data === true;
 }
+
+// Telefon-KI ----------------------------------------------------------------------
+
+export type TelefonEinstellungen = { aktiv: boolean; hinweise: string; maxPersonen: number; schluessel: string | null };
+
+export async function ladeTelefon(restaurantId: string): Promise<TelefonEinstellungen> {
+  if (vorschauAktiv()) {
+    return { aktiv: true, hinweise: "Parkplätze hinter dem Haus. Hunde sind willkommen. Montag Ruhetag.", maxPersonen: 8, schluessel: "3f9c1e0b7a2d4c6e8f1a3b5c7d9e0f2a4b6c" };
+  }
+  const db = await datenbank();
+  const [{ data: r, error }, { data: z }] = await Promise.all([
+    db.from("restaurants").select("telefon_aktiv, telefon_hinweise, telefon_max_personen").eq("id", restaurantId).single(),
+    db.from("telefon_zugang").select("schluessel").eq("restaurant_id", restaurantId).maybeSingle(),
+  ]);
+  if (error) throw new Error(error.message);
+  return { aktiv: r.telefon_aktiv, hinweise: r.telefon_hinweise, maxPersonen: r.telefon_max_personen, schluessel: z?.schluessel ?? null };
+}

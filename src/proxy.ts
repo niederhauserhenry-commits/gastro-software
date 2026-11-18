@@ -31,7 +31,9 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getUser();
   const pfad = request.nextUrl.pathname;
   // Absage-Link (/r/…) und Wartelisten-Angebot (/w/…) für Gäste funktionieren ohne Anmeldung.
-  const oeffentlich = pfad.startsWith("/anmelden") || pfad.startsWith("/auth/") || pfad.startsWith("/r/") || pfad.startsWith("/w/");
+  // Die Telefon-KI (/api/telefon) meldet sich mit Signatur und Schlüssel statt mit Anmeldung.
+  const oeffentlich =
+    pfad.startsWith("/anmelden") || pfad.startsWith("/auth/") || pfad.startsWith("/r/") || pfad.startsWith("/w/") || pfad === "/api/telefon";
 
   if (!data.user && !oeffentlich) {
     const ziel = request.nextUrl.clone();

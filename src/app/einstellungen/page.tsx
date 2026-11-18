@@ -12,7 +12,7 @@ export default async function Einstellungen({ searchParams }: PageProps<"/einste
   // Das Team darf jeder sehen, alles andere nur die Leitung.
   const anbieter = await istPlattformAdmin();
   const bereiche = [
-    ...(istLeitung(ich.rolle) ? [...schritte, "nachrichten" as const, "daten" as const] : []),
+    ...(istLeitung(ich.rolle) ? [...schritte, "nachrichten" as const, "telefon" as const, "daten" as const] : []),
     "team" as const,
     "feedback" as const,
     ...(anbieter ? ["anbieter" as const] : []),

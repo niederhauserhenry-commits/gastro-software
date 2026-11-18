@@ -92,9 +92,9 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - [ ] 6. Gästekartei mit Einwilligung für Allergien – gebaut am 17.11.2026, Datenbank-Skript `0004_gaestekartei.sql` ist eingespielt, Online-Test durch Henry offen
 - [ ] 7. Nachrichten an Gäste: Bestätigung, Erinnerung, Absage-Link – gebaut am 18.11.2026 im Testmodus, Skript `0005_nachrichten.sql` eingespielt. Offen: SMS-Anbieter anbinden (Henry legt das Konto an), Online-Test
 - [ ] 8. Warteliste – gebaut am 18.11.2026, Skript `0006_warteliste.sql` eingespielt, Online-Test durch Henry offen
-- [ ] 9. Telefon-KI anbinden
+- [x] 9. Telefon-KI anbinden (gebaut 18.11.2026, wartet auf Retell-Konto)
 - [x] 10. Feedback-Modul mit Wochenbericht (gebaut 18.11.2026)
-- [ ] 11. Offline-Ansicht, Datenexport, Löschkonzept
+- [x] 11. Offline-Ansicht, Datenexport, Löschkonzept (gebaut 18.11.2026)
 
 ## Spätere Module (nicht in Phase 1)
 Dienstplan mit Schichttausch, Arbeitszeiterfassung, Einkaufsliste, HACCP-Checklisten, Event-/Bankett-Anfragen, Bewertungsmanager, Gutscheine, Speisekarte mit Allergenen, Zahlen-Cockpit, Kassenanbindung.
@@ -111,3 +111,9 @@ Dienstplan mit Schichttausch, Arbeitszeiterfassung, Einkaufsliste, HACCP-Checkli
 - Jedes Teammitglied schickt Wünsche, Probleme oder Lob unter /feedback (höchstens 20 am Tag). Leitung sieht alles aus dem Betrieb, sonst nur eigene Einträge; Status und Antwort des Anbieters erscheinen dort.
 - Anbieter-Bereich /anbieter nur für Einträge in plattform_admins (Henry): alle Rückmeldungen mit Betriebsnamen, Status setzen, antworten.
 - Wochenbericht: pg_cron montags 06:07 UTC, wochenbericht_erstellen() schickt die Rückmeldungen ohne Personen- und Betriebsnamen per pg_net an die Claude API (claude-sonnet-5-5); wochenberichte_abholen() holt die Antwort jede Minute ab. Schlüssel nur im Supabase Vault (anthropic_api_key), von Henry selbst angelegt. Ohne Schlüssel: Bericht nur mit Zahlen.
+
+## Schritt 9: Telefon-KI über Retell (gebaut 18.11.2026)
+- Einstellungen → Telefon-KI (Leitung): an/aus, größte Gruppe am Telefon, Hinweise für die KI; fertige Anweisung für den Retell-Agenten und drei Custom Functions zum Kopieren.
+- Schnittstelle POST /api/telefon?k=<Restaurant-Schlüssel>: prüft X-Retell-Signature (HMAC-SHA256 über Rohtext + Zeit, 5 Minuten gültig) mit RETELL_API_KEY aus Vercel; Funktionen restaurant_info, verfuegbarkeit_pruefen, reservierung_anlegen. Antworten enthalten einen Satz "hinweis" für die KI.
+- Datenbank: telefon_zugang (Schlüssel nur für Leitung sichtbar, erneuerbar), telefon_info/telefon_anfrage/telefon_buchen nur mit gültigem Schlüssel und eingeschalteter KI; Buchung über reservierung_buchen mit Quelle telefon_ki (gleicher Doppelbuchungsschutz, Karteikarte, SMS-Bestätigung); höchstens 30 Telefonbuchungen pro Stunde.
+- Deutsche Nummer: Retell verkauft keine deutschen Nummern, Anbindung per Elastic SIP Trunk (z. B. Twilio, sipgate).
