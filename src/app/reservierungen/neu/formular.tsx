@@ -105,6 +105,11 @@ export function ReservierungsFormular({
       {zustand.fehler && (
         <p role="alert" className="rounded-lg border border-warnrot/30 bg-warnrot-hell px-4 py-3 font-medium text-warnrot">
           {t.fehler[zustand.fehler]}
+          {zustand.warteliste && (
+            <Link href={zustand.warteliste} className="mt-2 block font-semibold underline underline-offset-4">
+              {t.wartelisteSeite.voll}
+            </Link>
+          )}
         </p>
       )}
 

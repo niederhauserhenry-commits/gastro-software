@@ -8,7 +8,7 @@ import { aktuelleMitgliedschaft } from "@/lib/sitzung";
 import { datenbank } from "@/lib/supabase/server";
 import type { FehlerCode } from "@/texte/de";
 
-export type FormularZustand = { fehler: FehlerCode | null };
+export type FormularZustand = { fehler: FehlerCode | null; warteliste?: string };
 
 function text(form: FormData, feld: string) {
   const wert = form.get(feld);
@@ -43,7 +43,13 @@ export async function reservierungAnlegen(_vorher: FormularZustand, form: FormDa
     p_ausserhalb: form.get("ausserhalb") === "on",
     p_gast: istUuid(text(form, "gast")) ? text(form, "gast") : null,
   });
-  if (error) return { fehler: fehlerCode(error.message) };
+  if (error) {
+    const code = fehlerCode(error.message);
+    // Ist nichts mehr frei, bietet das Formular die Warteliste mit denselben Angaben an.
+    const voll = code === "KEIN_TISCH_FREI" || code === "KEIN_PLATZ_FREI" || code === "TISCH_BELEGT";
+    const werte = new URLSearchParams({ datum, name, telefon: text(form, "telefon"), personen: String(personen), von: uhrzeit });
+    return { fehler: code, warteliste: voll ? `/warteliste?${werte.toString()}` : undefined };
+  }
 
   revalidatePath("/", "layout");
   redirect(`/reservierungen?datum=${datum}&ok=neu`);

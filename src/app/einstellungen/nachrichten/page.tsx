@@ -77,6 +77,14 @@ export default async function Nachrichten({ searchParams }: PageProps<"/einstell
             </div>
             <VorlagenFeld name="vorlageBestaetigung" titel={n.bestaetigung} startwert={einstellungen.vorlageBestaetigung} restaurant={ich.restaurantName} />
             <VorlagenFeld name="vorlageErinnerung" titel={n.erinnerungText} startwert={einstellungen.vorlageErinnerung} restaurant={ich.restaurantName} />
+            <VorlagenFeld
+              name="vorlageWarteliste"
+              titel={n.wartelisteText}
+              startwert={einstellungen.vorlageWarteliste}
+              restaurant={ich.restaurantName}
+              linkPfad="w"
+              minuten={einstellungen.wartelisteFristMinuten}
+            />
           </section>
 
           <button className={`${knopfKlasse} px-6 py-3.5 text-lg`}>{t.allgemein.speichern}</button>

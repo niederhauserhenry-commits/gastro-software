@@ -10,11 +10,15 @@ export function VorlagenFeld({
   titel,
   startwert,
   restaurant,
+  linkPfad = "r",
+  minuten = 15,
 }: {
   name: string;
   titel: string;
   startwert: string;
   restaurant: string;
+  linkPfad?: "r" | "w";
+  minuten?: number;
 }) {
   const t = texte().nachrichten;
   const [wert, setWert] = useState(startwert);
@@ -24,7 +28,8 @@ export function VorlagenFeld({
     .replaceAll("{datum}", "21.11.")
     .replaceAll("{uhrzeit}", "19:00")
     .replaceAll("{personen}", "2")
-    .replaceAll("{link}", "https://gastro-software.vercel.app/r/3f9a1c07b2d4");
+    .replaceAll("{minuten}", String(minuten))
+    .replaceAll("{link}", `https://gastro-software.vercel.app/${linkPfad}/3f9a1c07b2d4`);
   const zuLang = vorschau.length > 160;
 
   return (

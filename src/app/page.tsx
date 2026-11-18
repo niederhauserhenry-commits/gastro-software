@@ -12,7 +12,7 @@ import { texte } from "@/texte";
 const kachelListe = [
   { schluessel: "reservierungen", modul: "reservierungen", ziel: "/reservierungen" },
   { schluessel: "gaeste", modul: "gaeste", ziel: "/gaeste" },
-  { schluessel: "warteliste", modul: "warteliste", ziel: null },
+  { schluessel: "warteliste", modul: "warteliste", ziel: "/warteliste" },
   { schluessel: "feedback", modul: "feedback", ziel: null },
   { schluessel: "einstellungen", modul: null, ziel: "/einstellungen" },
 ] as const;

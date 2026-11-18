@@ -73,6 +73,15 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - Versand: `nachrichten_verarbeiten` läuft jede Minute (pg_cron). Solange kein Anbieter angebunden ist, werden fällige Nachrichten als „Testmodus, nicht verschickt“ markiert.
 - Nächster Schritt dafür: Henry legt ein Konto bei einem SMS-Anbieter an (z. B. seven.io aus Deutschland) und hinterlegt den API-Schlüssel selbst im Supabase-Tresor (Vault). Danach ruft `nachrichten_verarbeiten` den Anbieter über pg_net auf. Die Adresse der Webseite steht in `app_konfiguration`.
 
+## Warteliste (Schritt 8)
+- Eintrag mit Datum, Personen und Zeitfenster („frühestens 18:00, spätestens 20:30“). Bekannte Telefonnummern werden mit der Karteikarte verknüpft.
+- Für jeden wartenden Eintrag berechnet `warteliste_freie_zeit` die erste Uhrzeit im Fenster, zu der ein passender Platz frei ist (berücksichtigt Öffnungszeiten, Tischdauer und Durchgänge).
+- Von Hand: Das Team sieht „Frei um 19:30“ und trägt mit einem Klick ein oder schickt ein Angebot per SMS.
+- Automatisch: Storno, No-Show oder „Tisch ist wieder frei“ lösen `warteliste_automatisch` aus. Der erste passende Gast mit Telefonnummer bekommt ein Angebot mit Link `/w/<schlüssel>`. Pro Tag läuft immer nur ein Angebot. Zusage bucht über `reservierung_buchen`; Absage oder Ablauf der Frist gibt an den Nächsten weiter (`warteliste_ablauf` läuft jede Minute).
+- Ist der Platz bei der Zusage schon anders vergeben, bleibt der Gast auf der Liste.
+- `reservierung_anlegen` prüft jetzt nur noch die Rechte und ruft `reservierung_buchen` auf. Das ist der einzige Ort mit der Buchungslogik.
+- Ist im Reservierungsformular nichts mehr frei, bietet es „Auf die Warteliste setzen“ mit denselben Angaben an.
+
 ## Fahrplan Phase 1
 - [x] 1. Grundgerüst (Projekt, Startseite, PWA-Manifest, Texte-Datei)
 - [x] 1b. Online stellen (GitHub + Vercel)
@@ -82,7 +91,7 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - [ ] 5. Tagesansicht und Startseite mit Kacheln – zusammen mit Schritt 4 gebaut (Tagesliste, Tischplan als Zeitleiste, Startseite zeigt die heutigen Reservierungen)
 - [ ] 6. Gästekartei mit Einwilligung für Allergien – gebaut am 17.11.2026, Datenbank-Skript `0004_gaestekartei.sql` ist eingespielt, Online-Test durch Henry offen
 - [ ] 7. Nachrichten an Gäste: Bestätigung, Erinnerung, Absage-Link – gebaut am 18.11.2026 im Testmodus, Skript `0005_nachrichten.sql` eingespielt. Offen: SMS-Anbieter anbinden (Henry legt das Konto an), Online-Test
-- [ ] 8. Warteliste
+- [ ] 8. Warteliste – gebaut am 18.11.2026, Skript `0006_warteliste.sql` eingespielt, Online-Test durch Henry offen
 - [ ] 9. Telefon-KI anbinden
 - [ ] 10. Feedback-Modul mit Wochenbericht
 - [ ] 11. Offline-Ansicht, Datenexport, Löschkonzept

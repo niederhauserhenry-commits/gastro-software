@@ -214,10 +214,11 @@ export async function nachrichtenSpeichern(form: FormData) {
   const stunden = zahl(form, "erinnerungStunden");
   const bestaetigung = text(form, "vorlageBestaetigung");
   const erinnerung = text(form, "vorlageErinnerung");
+  const warteliste = text(form, "vorlageWarteliste");
   const ziel = "/einstellungen/nachrichten";
   if (modus !== "aus" && modus !== "test") redirect(`${ziel}?fehler=EINGABE_FEHLT`);
   if (!(stunden >= 1 && stunden <= 72)) redirect(`${ziel}?fehler=ZAHL_UNGUELTIG`);
-  if (bestaetigung.length < 10 || bestaetigung.length > 300 || erinnerung.length < 10 || erinnerung.length > 300) {
+  if ([bestaetigung, erinnerung, warteliste].some((v) => v.length < 10 || v.length > 300)) {
     redirect(`${ziel}?fehler=EINGABE_FEHLT`);
   }
 
@@ -229,6 +230,7 @@ export async function nachrichtenSpeichern(form: FormData) {
       erinnerung_stunden: stunden,
       vorlage_bestaetigung: bestaetigung,
       vorlage_erinnerung: erinnerung,
+      vorlage_warteliste: warteliste,
     })
     .eq("id", ich.restaurantId);
   if (error) redirect(`${ziel}?fehler=${dbFehler(error)}`);

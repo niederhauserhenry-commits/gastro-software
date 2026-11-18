@@ -18,6 +18,7 @@ export type Einstellungen = {
   erinnerungStunden: number;
   vorlageBestaetigung: string;
   vorlageErinnerung: string;
+  vorlageWarteliste: string;
 };
 
 export type Oeffnungszeit = { wochentag: number; von: string; bis: string };
@@ -49,13 +50,14 @@ export async function ladeEinstellungen(restaurantId: string): Promise<Einstellu
       erinnerungStunden: 24,
       vorlageBestaetigung: "{restaurant}: Ihr Tisch am {datum} um {uhrzeit} Uhr für {personen} Pers. ist reserviert. Absagen: {link}",
       vorlageErinnerung: "{restaurant}: Wir erwarten Sie am {datum} um {uhrzeit} Uhr. Verhindert? Hier absagen: {link}",
+      vorlageWarteliste: "{restaurant}: Ein Tisch ist frei! {datum}, {uhrzeit} Uhr, {personen} Pers. Zusagen innerhalb {minuten} Min.: {link}",
     };
   }
   const db = await datenbank();
   const { data, error } = await db
     .from("restaurants")
     .select(
-      "vergabe_modus, plaetze_gesamt, dauer_modus, standard_dauer_minuten, warteliste_modus, warteliste_frist_minuten, loeschfrist_monate, zeitzone, nachrichten_modus, erinnerung_stunden, vorlage_bestaetigung, vorlage_erinnerung",
+      "vergabe_modus, plaetze_gesamt, dauer_modus, standard_dauer_minuten, warteliste_modus, warteliste_frist_minuten, loeschfrist_monate, zeitzone, nachrichten_modus, erinnerung_stunden, vorlage_bestaetigung, vorlage_erinnerung, vorlage_warteliste",
     )
     .eq("id", restaurantId)
     .single();
@@ -73,6 +75,7 @@ export async function ladeEinstellungen(restaurantId: string): Promise<Einstellu
     erinnerungStunden: data.erinnerung_stunden,
     vorlageBestaetigung: data.vorlage_bestaetigung,
     vorlageErinnerung: data.vorlage_erinnerung,
+    vorlageWarteliste: data.vorlage_warteliste,
   };
 }
 
@@ -415,7 +418,7 @@ export const istUuid = (wert: unknown): wert is string =>
 export type NachrichtStatus = "wartet" | "gesendet" | "testmodus" | "abgebrochen" | "fehler";
 export type Nachricht = {
   id: string;
-  art: "bestaetigung" | "erinnerung";
+  art: "bestaetigung" | "erinnerung" | "warteliste";
   an: string;
   text: string;
   sendenAb: string;
@@ -438,7 +441,7 @@ export async function ladeNachrichten(restaurantId: string): Promise<Nachricht[]
   const db = await datenbank();
   const { data, error } = await db
     .from("nachrichten")
-    .select("id, art, an, text, senden_ab, status, reservierungen(gast_name)")
+    .select("id, art, an, text, senden_ab, status, reservierungen(gast_name), warteliste(gast_name)")
     .eq("restaurant_id", restaurantId)
     .order("senden_ab", { ascending: false })
     .limit(100);
@@ -450,6 +453,82 @@ export async function ladeNachrichten(restaurantId: string): Promise<Nachricht[]
     text: n.text,
     sendenAb: n.senden_ab,
     status: n.status,
-    gastName: (n.reservierungen as unknown as { gast_name: string } | null)?.gast_name ?? "",
+    gastName:
+      (n.reservierungen as unknown as { gast_name: string } | null)?.gast_name ??
+      (n.warteliste as unknown as { gast_name: string } | null)?.gast_name ??
+      "",
   }));
+}
+
+// Warteliste ------------------------------------------------------------------
+
+export type WartelisteStatus = "wartet" | "angeboten" | "gebucht" | "abgelehnt" | "abgelaufen" | "entfernt";
+export type WartelisteEintrag = {
+  id: string;
+  gastId: string | null;
+  gastName: string;
+  telefon: string;
+  personen: number;
+  von: string;
+  bis: string;
+  notiz: string;
+  status: WartelisteStatus;
+  angebotUhrzeit: string | null;
+  angebotBis: string | null;
+  freieZeit: string | null;
+  freierDurchgang: string | null;
+  reservierungId: string | null;
+};
+
+export async function ladeWarteliste(restaurantId: string, datum: string): Promise<WartelisteEintrag[]> {
+  if (vorschauAktiv()) {
+    const e = (id: string, gastName: string, personen: number, von: string, bis: string, status: WartelisteStatus, extra: Partial<WartelisteEintrag> = {}): WartelisteEintrag => ({
+      id, gastId: null, gastName, telefon: "0151 1234567", personen, von, bis, notiz: "", status,
+      angebotUhrzeit: null, angebotBis: null, freieZeit: null, freierDurchgang: null, reservierungId: null, ...extra,
+    });
+    return [
+      e("w1", "Familie Krüger", 4, "18:00", "20:00", "angeboten", { angebotUhrzeit: "19:30", angebotBis: "18:47" }),
+      e("w2", "Herr Petersen", 2, "19:00", "21:00", "wartet", { freieZeit: "20:30", notiz: "Gern an der Theke" }),
+      e("w3", "Frau Wolters", 6, "18:30", "19:30", "wartet", { telefon: "" }),
+      e("w4", "Dr. Albers", 3, "18:00", "19:00", "gebucht", { reservierungId: "7" }),
+    ];
+  }
+  const db = await datenbank();
+  const { data, error } = await db.rpc("warteliste_tag", { p_restaurant: restaurantId, p_datum: datum });
+  if (error) throw new Error(error.message);
+  type Zeile = {
+    id: string; gast_id: string | null; gast_name: string; telefon: string; personen: number; von: string; bis: string;
+    notiz: string; status: WartelisteStatus; angebot_uhrzeit: string | null; angebot_bis: string | null;
+    freie_zeit: string | null; freier_durchgang: string | null; reservierung_id: string | null;
+  };
+  return (data as Zeile[]).map((z) => ({
+    id: z.id,
+    gastId: z.gast_id,
+    gastName: z.gast_name,
+    telefon: z.telefon,
+    personen: z.personen,
+    von: z.von,
+    bis: z.bis,
+    notiz: z.notiz,
+    status: z.status,
+    angebotUhrzeit: z.angebot_uhrzeit,
+    angebotBis: z.angebot_bis,
+    freieZeit: z.freie_zeit,
+    freierDurchgang: z.freier_durchgang,
+    reservierungId: z.reservierung_id,
+  }));
+}
+
+// Alle Viertelstunden eines Tages, zu denen laut Öffnungszeiten geöffnet ist.
+export function oeffnungsSlots(zeiten: Oeffnungszeit[], datum: string) {
+  const min = (z: string) => Number(z.slice(0, 2)) * 60 + Number(z.slice(3, 5));
+  const tag = wochentagVon(datum);
+  const slots = new Set<number>();
+  for (const z of zeiten.filter((x) => x.wochentag === tag)) {
+    const von = min(z.von);
+    const bis = min(z.bis) > von ? min(z.bis) - 30 : 1425;
+    for (let m = von; m <= bis; m += 15) slots.add(m);
+  }
+  if (slots.size === 0) for (let m = 660; m <= 1380; m += 15) slots.add(m);
+  return [...slots].sort((a, b) => a - b).map((m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
 }

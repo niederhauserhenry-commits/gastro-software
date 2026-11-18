@@ -30,8 +30,8 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getUser();
   const pfad = request.nextUrl.pathname;
-  // Der Absage-Link für Gäste (/r/…) funktioniert ohne Anmeldung.
-  const oeffentlich = pfad.startsWith("/anmelden") || pfad.startsWith("/auth/") || pfad.startsWith("/r/");
+  // Absage-Link (/r/…) und Wartelisten-Angebot (/w/…) für Gäste funktionieren ohne Anmeldung.
+  const oeffentlich = pfad.startsWith("/anmelden") || pfad.startsWith("/auth/") || pfad.startsWith("/r/") || pfad.startsWith("/w/");
 
   if (!data.user && !oeffentlich) {
     const ziel = request.nextUrl.clone();
