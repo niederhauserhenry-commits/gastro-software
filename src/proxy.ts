@@ -44,5 +44,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Bilder, App-Symbole und das Manifest brauchen keine Anmeldung.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:png|jpg|svg|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|.*\\.(?:png|jpg|svg|ico)$).*)"],
 };

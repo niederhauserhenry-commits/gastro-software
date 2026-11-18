@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { abmelden, restaurantAnlegen } from "@/app/aktionen";
+import { restaurantAnlegen } from "@/app/aktionen";
+import { AbmeldeFormular } from "@/app/offline";
 import { Kopfleiste, Meldung, Seite, feldKlasse, knopfKlasse } from "@/app/bausteine";
 import { fehlerText } from "@/lib/fehler";
 import { datenbank } from "@/lib/supabase/server";
@@ -37,9 +38,9 @@ export default async function Einrichten({ searchParams }: PageProps<"/einrichte
         <button className={`${knopfKlasse} w-full`}>{t.einrichten.anlegen}</button>
       </form>
 
-      <form action={abmelden} className="mt-8">
-        <button className="text-stift underline underline-offset-4">{t.allgemein.abmelden}</button>
-      </form>
+      <div className="mt-8">
+        <AbmeldeFormular className="text-stift underline underline-offset-4" text={t.allgemein.abmelden} />
+      </div>
       </Seite>
     </>
   );

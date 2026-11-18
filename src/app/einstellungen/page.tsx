@@ -9,7 +9,7 @@ export default async function Einstellungen({ searchParams }: PageProps<"/einste
   const ich = await aktuelleMitgliedschaft();
   const parameter = await searchParams;
   // Das Team darf jeder sehen, alles andere nur die Leitung.
-  const bereiche = [...(istLeitung(ich.rolle) ? [...schritte, "nachrichten" as const] : []), "team" as const];
+  const bereiche = [...(istLeitung(ich.rolle) ? [...schritte, "nachrichten" as const, "daten" as const] : []), "team" as const];
 
   return (
     <>

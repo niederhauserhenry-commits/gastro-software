@@ -98,3 +98,11 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 
 ## Spätere Module (nicht in Phase 1)
 Dienstplan mit Schichttausch, Arbeitszeiterfassung, Einkaufsliste, HACCP-Checklisten, Event-/Bankett-Anfragen, Bewertungsmanager, Gutscheine, Speisekarte mit Allergenen, Zahlen-Cockpit, Kassenanbindung.
+
+## Schritt 11: Datenschutz und Ausfallsicherheit (gebaut 18.11.2026)
+- Änderungsprotokoll (Tabelle protokoll): Reservierungen, Karteikarten (nur Feldnamen, keine Inhalte), Team, Einstellungen, Export, Auskunft, Import, Löschfrist. Nur Leitung sieht es, Einträge nach 24 Monaten gelöscht.
+- Gesamtexport als ZIP mit CSV je Tabelle (/einstellungen/daten/export), Excel-tauglich (UTF-8 mit BOM, Semikolon, Formelschutz).
+- Gäste-Import aus CSV (bis 5000 Zeilen, erkennt Spalten, überspringt Doppelte, Windows-Zeichensatz wird erkannt).
+- Datenauskunft je Gast (Art. 15 DSGVO) als JSON-Datei auf der Karteikarte.
+- Restaurant löschen nur durch Inhaber, mit Namensbestätigung.
+- Offline-Ansicht: Service Worker hält Startseite, Reservierungen und Warteliste als letzten Stand; gelber Hinweis ohne Netz; Abmelden leert den Speicher.

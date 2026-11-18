@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Kopfleiste, Seite } from "@/app/bausteine";
 import { AbmeldeKnopf } from "@/app/einstellungen/rahmen";
+import { OfflineHinweis } from "@/app/offline";
 import { Tagesleiste, jetztImRestaurant } from "@/app/tagesleiste";
 import { datumImRestaurant, istAktiv, ladeEinstellungen, ladeOeffnungszeiten, ladeReservierungen } from "@/lib/daten";
 import { aktuelleMitgliedschaft, istLeitung } from "@/lib/sitzung";
@@ -123,6 +124,7 @@ export default async function Startseite() {
           })}
         </ul>
       </Seite>
+      <OfflineHinweis stand={new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: einstellungen.zeitzone }).format(new Date())} />
     </>
   );
 }

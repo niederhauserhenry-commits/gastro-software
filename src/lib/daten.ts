@@ -532,3 +532,35 @@ export function oeffnungsSlots(zeiten: Oeffnungszeit[], datum: string) {
   if (slots.size === 0) for (let m = 660; m <= 1380; m += 15) slots.add(m);
   return [...slots].sort((a, b) => a - b).map((m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
 }
+
+// Änderungsprotokoll ------------------------------------------------------------
+
+export type ProtokollEintrag = {
+  id: number;
+  zeit: string;
+  wer: string;
+  aktion: string;
+  objektId: string | null;
+  details: string;
+};
+
+export async function ladeProtokoll(restaurantId: string): Promise<ProtokollEintrag[]> {
+  if (vorschauAktiv()) {
+    return [
+      { id: 5, zeit: "2026-11-18T01:12:00Z", wer: "Mia", aktion: "reservierung_status", objektId: null, details: "18.11.2026 19:00: bestaetigt -> storniert (vom Gast über den Link)" },
+      { id: 4, zeit: "2026-11-17T18:40:00Z", wer: "Henry", aktion: "gast_geaendert", objektId: "00000000-0000-0000-0000-0000000000a1", details: "Vorlieben, Allergien" },
+      { id: 3, zeit: "2026-11-17T17:02:00Z", wer: "Sven", aktion: "reservierung_angelegt", objektId: null, details: "21.11.2026 19:00, 2 Pers., personal" },
+      { id: 2, zeit: "2026-11-17T09:15:00Z", wer: "Henry", aktion: "team_geaendert", objektId: null, details: "Sven: mitarbeiter, darf reservieren" },
+      { id: 1, zeit: "2026-11-17T02:17:00Z", wer: "System", aktion: "loeschfrist", objektId: null, details: "3 Karteikarten gelöscht, 41 Reservierungen anonymisiert" },
+    ];
+  }
+  const db = await datenbank();
+  const { data, error } = await db
+    .from("protokoll")
+    .select("id, zeit, wer, aktion, objekt_id, details")
+    .eq("restaurant_id", restaurantId)
+    .order("zeit", { ascending: false })
+    .limit(300);
+  if (error) throw new Error(error.message);
+  return data.map((p) => ({ id: p.id, zeit: p.zeit, wer: p.wer, aktion: p.aktion, objektId: p.objekt_id, details: p.details }));
+}

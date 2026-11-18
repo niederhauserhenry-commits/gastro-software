@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Kopfleiste, Meldung, Seite, Zurueck, feldKlasse, knopfKlasse, knopfLoeschKlasse, knopfZweitKlasse } from "@/app/bausteine";
 import { AbmeldeKnopf } from "@/app/einstellungen/rahmen";
+import { OfflineHinweis } from "@/app/offline";
 import { GastMarken } from "@/app/gaeste/marken";
 import { statusSetzen } from "@/app/reservierungen/aktionen";
 import { Tischplan } from "@/app/reservierungen/tischplan";
@@ -123,6 +124,7 @@ export default async function Reservierungen({ searchParams }: PageProps<"/reser
           </section>
         </div>
       </Seite>
+      <OfflineHinweis stand={new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: einstellungen.zeitzone }).format(new Date())} />
     </>
   );
 }

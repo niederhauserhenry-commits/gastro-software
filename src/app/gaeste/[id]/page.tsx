@@ -10,7 +10,7 @@ import {
   type ReservierungStatus,
 } from "@/lib/daten";
 import { fehlerText } from "@/lib/fehler";
-import { aktuelleMitgliedschaft } from "@/lib/sitzung";
+import { aktuelleMitgliedschaft, istLeitung } from "@/lib/sitzung";
 import { texte } from "@/texte";
 
 const warDa: ReservierungStatus[] = ["angekommen", "abgeschlossen"];
@@ -68,6 +68,11 @@ export default async function Karteikarte({ params, searchParams }: PageProps<"/
               <Link href={`/gaeste/${gast.id}/bearbeiten`} className={`${knopfZweitKlasse} px-5`}>
                 {g.bearbeiten}
               </Link>
+              {istLeitung(ich.rolle) && (
+                <a href={`/gaeste/${gast.id}/auskunft`} download className={`${knopfZweitKlasse} px-5`}>
+                  {g.auskunft}
+                </a>
+              )}
             </div>
           )}
         </header>

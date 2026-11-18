@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Kopfleiste, Meldung, Seite, Zurueck, feldKlasse, karteKlasse, knopfKlasse, knopfZweitKlasse } from "@/app/bausteine";
 import { AbmeldeKnopf } from "@/app/einstellungen/rahmen";
+import { OfflineHinweis } from "@/app/offline";
 import { wartelisteAnbieten, wartelisteEintragen, wartelisteEntfernen, wartelisteHinzufuegen } from "@/app/warteliste/aktionen";
 import {
   datumGueltig, datumImRestaurant, datumPlus, ladeEinstellungen, ladeOeffnungszeiten, ladeWarteliste, oeffnungsSlots,
@@ -135,6 +136,7 @@ export default async function Warteliste({ searchParams }: PageProps<"/wartelist
           )}
         </div>
       </Seite>
+      <OfflineHinweis stand={new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: einstellungen.zeitzone }).format(new Date())} />
     </>
   );
 }

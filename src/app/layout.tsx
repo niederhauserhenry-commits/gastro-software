@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { standardSprache, texte } from "@/texte";
+import { ServiceWorkerAnmelden } from "@/app/offline";
 import "./globals.css";
 
 const t = texte();
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Jede Seite hängt vom angemeldeten Nutzer ab und wird deshalb
             erst beim Aufruf erzeugt. Bis dahin erscheint der Ladehinweis. */}
         <Suspense fallback={<p className="p-8 text-stift">{t.allgemein.laedt}</p>}>{children}</Suspense>
+        <ServiceWorkerAnmelden />
       </body>
     </html>
   );

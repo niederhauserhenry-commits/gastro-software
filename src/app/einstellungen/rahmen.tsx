@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { abmelden } from "@/app/aktionen";
+import { AbmeldeFormular } from "@/app/offline";
 import { Kopfleiste, Meldung, Seite, Zurueck } from "@/app/bausteine";
 import { fehlerText } from "@/lib/fehler";
 import type { Mitgliedschaft } from "@/lib/sitzung";
@@ -11,11 +11,10 @@ export type Schritt = (typeof schritte)[number];
 export function AbmeldeKnopf() {
   const t = texte();
   return (
-    <form action={abmelden}>
-      <button className="rounded-lg border border-white/30 px-3 py-1.5 font-medium text-white hover:bg-white/10">
-        {t.allgemein.abmelden}
-      </button>
-    </form>
+    <AbmeldeFormular
+      className="rounded-lg border border-white/30 px-3 py-1.5 font-medium text-white hover:bg-white/10"
+      text={t.allgemein.abmelden}
+    />
   );
 }
 
