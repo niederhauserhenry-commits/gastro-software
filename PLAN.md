@@ -93,7 +93,7 @@ Modulare Software für die Gastronomie: Web-Programm (Chef/Management) und App f
 - [ ] 7. Nachrichten an Gäste: Bestätigung, Erinnerung, Absage-Link – gebaut am 18.11.2026 im Testmodus, Skript `0005_nachrichten.sql` eingespielt. Offen: SMS-Anbieter anbinden (Henry legt das Konto an), Online-Test
 - [ ] 8. Warteliste – gebaut am 18.11.2026, Skript `0006_warteliste.sql` eingespielt, Online-Test durch Henry offen
 - [ ] 9. Telefon-KI anbinden
-- [ ] 10. Feedback-Modul mit Wochenbericht
+- [x] 10. Feedback-Modul mit Wochenbericht (gebaut 18.11.2026)
 - [ ] 11. Offline-Ansicht, Datenexport, Löschkonzept
 
 ## Spätere Module (nicht in Phase 1)
@@ -106,3 +106,8 @@ Dienstplan mit Schichttausch, Arbeitszeiterfassung, Einkaufsliste, HACCP-Checkli
 - Datenauskunft je Gast (Art. 15 DSGVO) als JSON-Datei auf der Karteikarte.
 - Restaurant löschen nur durch Inhaber, mit Namensbestätigung.
 - Offline-Ansicht: Service Worker hält Startseite, Reservierungen und Warteliste als letzten Stand; gelber Hinweis ohne Netz; Abmelden leert den Speicher.
+
+## Schritt 10: Feedback-Modul und KI-Wochenbericht (gebaut 18.11.2026)
+- Jedes Teammitglied schickt Wünsche, Probleme oder Lob unter /feedback (höchstens 20 am Tag). Leitung sieht alles aus dem Betrieb, sonst nur eigene Einträge; Status und Antwort des Anbieters erscheinen dort.
+- Anbieter-Bereich /anbieter nur für Einträge in plattform_admins (Henry): alle Rückmeldungen mit Betriebsnamen, Status setzen, antworten.
+- Wochenbericht: pg_cron montags 06:07 UTC, wochenbericht_erstellen() schickt die Rückmeldungen ohne Personen- und Betriebsnamen per pg_net an die Claude API (claude-sonnet-5-5); wochenberichte_abholen() holt die Antwort jede Minute ab. Schlüssel nur im Supabase Vault (anthropic_api_key), von Henry selbst angelegt. Ohne Schlüssel: Bericht nur mit Zahlen.

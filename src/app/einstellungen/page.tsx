@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Kopfleiste, Meldung, Seite, Zurueck } from "@/app/bausteine";
 import { AbmeldeKnopf, schritte } from "@/app/einstellungen/rahmen";
+import { istPlattformAdmin } from "@/lib/daten";
 import { aktuelleMitgliedschaft, istLeitung } from "@/lib/sitzung";
 import { texte } from "@/texte";
 
@@ -9,7 +10,13 @@ export default async function Einstellungen({ searchParams }: PageProps<"/einste
   const ich = await aktuelleMitgliedschaft();
   const parameter = await searchParams;
   // Das Team darf jeder sehen, alles andere nur die Leitung.
-  const bereiche = [...(istLeitung(ich.rolle) ? [...schritte, "nachrichten" as const, "daten" as const] : []), "team" as const];
+  const anbieter = await istPlattformAdmin();
+  const bereiche = [
+    ...(istLeitung(ich.rolle) ? [...schritte, "nachrichten" as const, "daten" as const] : []),
+    "team" as const,
+    "feedback" as const,
+    ...(anbieter ? ["anbieter" as const] : []),
+  ];
 
   return (
     <>
@@ -23,7 +30,7 @@ export default async function Einstellungen({ searchParams }: PageProps<"/einste
         <ul className="divide-y divide-linie overflow-hidden rounded-xl border border-linie bg-papier">
           {bereiche.map((name) => {
             const text = t.einstellungen.bereiche[name];
-            const ziel = name === "team" ? "/team" : `/einstellungen/${name}`;
+            const ziel = name === "team" || name === "feedback" || name === "anbieter" ? `/${name}` : `/einstellungen/${name}`;
             return (
               <li key={name}>
                 <Link href={ziel} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-kreide">

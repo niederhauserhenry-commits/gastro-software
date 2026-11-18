@@ -564,3 +564,98 @@ export async function ladeProtokoll(restaurantId: string): Promise<ProtokollEint
   if (error) throw new Error(error.message);
   return data.map((p) => ({ id: p.id, zeit: p.zeit, wer: p.wer, aktion: p.aktion, objektId: p.objekt_id, details: p.details }));
 }
+
+// Feedback an den Anbieter -------------------------------------------------------
+
+export type FeedbackArt = "wunsch" | "problem" | "lob";
+export type FeedbackStatus = "neu" | "gelesen" | "geplant" | "erledigt" | "abgelehnt";
+
+export type Feedback = {
+  id: string;
+  restaurant: string;
+  wer: string;
+  art: FeedbackArt;
+  text: string;
+  status: FeedbackStatus;
+  antwort: string;
+  erstelltAm: string;
+};
+
+const vorschauFeedback: Feedback[] = [
+  { id: "f3", restaurant: "Gasthaus Zur Linde", wer: "Sven", art: "wunsch", text: "Ein Dienstplan, in dem wir Schichten untereinander tauschen können, wäre super. Im Moment läuft das über WhatsApp.", status: "geplant", antwort: "Danke, Sven! Der Dienstplan ist das nächste große Modul. Ich melde mich, sobald ihr ihn testen könnt.", erstelltAm: "2026-11-17T20:12:00Z" },
+  { id: "f2", restaurant: "Gasthaus Zur Linde", wer: "Henry", art: "problem", text: "Am Handy springt beim Tischplan die Ansicht manchmal nach oben, wenn man eine Reservierung antippt.", status: "neu", antwort: "", erstelltAm: "2026-11-17T12:40:00Z" },
+  { id: "f1", restaurant: "Gasthaus Zur Linde", wer: "Mia", art: "lob", text: "Die Warteliste hat uns am Samstag zwei Tische gerettet.", status: "gelesen", antwort: "", erstelltAm: "2026-11-16T22:05:00Z" },
+];
+
+export async function ladeFeedback(restaurantId: string): Promise<Feedback[]> {
+  if (vorschauAktiv()) return vorschauFeedback;
+  const db = await datenbank();
+  const { data, error } = await db
+    .from("feedback")
+    .select("id, wer, art, text, status, antwort, erstellt_am")
+    .eq("restaurant_id", restaurantId)
+    .order("erstellt_am", { ascending: false })
+    .limit(200);
+  if (error) throw new Error(error.message);
+  return data.map((f) => ({ id: f.id, restaurant: "", wer: f.wer, art: f.art, text: f.text, status: f.status, antwort: f.antwort, erstelltAm: f.erstellt_am }));
+}
+
+export async function istPlattformAdmin(): Promise<boolean> {
+  if (vorschauAktiv()) return true;
+  const db = await datenbank();
+  const { data } = await db.rpc("ist_plattform_admin");
+  return data === true;
+}
+
+export async function ladeFeedbackUebersicht(tage: number): Promise<Feedback[]> {
+  if (vorschauAktiv()) {
+    return [
+      ...vorschauFeedback,
+      { id: "f4", restaurant: "Hotel am See", wer: "Frau Brandt", art: "wunsch", text: "Wir bräuchten einen eigenen Reiter für Frühstücksgäste.", status: "neu", antwort: "", erstelltAm: "2026-11-15T08:30:00Z" },
+    ];
+  }
+  const db = await datenbank();
+  const { data, error } = await db.rpc("feedback_uebersicht", { p_tage: tage });
+  if (error) throw new Error(error.message);
+  return (data as { id: string; restaurant: string; wer: string; art: FeedbackArt; text: string; status: FeedbackStatus; antwort: string; erstellt_am: string }[]).map(
+    (f) => ({ id: f.id, restaurant: f.restaurant, wer: f.wer, art: f.art, text: f.text, status: f.status, antwort: f.antwort, erstelltAm: f.erstellt_am }),
+  );
+}
+
+export type Wochenbericht = {
+  id: string;
+  von: string;
+  bis: string;
+  anzahl: number;
+  statistik: { wunsch?: number; problem?: number; lob?: number; betriebe?: number; offen_gesamt?: number };
+  text: string;
+  status: "wartet" | "fertig" | "ohne_ki" | "fehler";
+};
+
+export async function ladeWochenberichte(): Promise<Wochenbericht[]> {
+  if (vorschauAktiv()) {
+    return [
+      {
+        id: "b1", von: "2026-11-09T06:07:00Z", bis: "2026-11-16T06:07:00Z", anzahl: 4,
+        statistik: { wunsch: 2, problem: 1, lob: 1, betriebe: 2, offen_gesamt: 2 },
+        text: "Das Wichtigste in drei Sätzen\nZwei Betriebe wünschen sich einen Dienstplan. Ein Darstellungsfehler im Tischplan am Handy stört im Service. Die Warteliste kommt sehr gut an.\n\nEmpfehlung: die nächsten drei Schritte\n1. Fehler im Tischplan am Handy beheben.\n2. Dienstplan mit Schichttausch planen.\n3. Frühstücksgäste als eigenen Reiter prüfen.",
+        status: "fertig",
+      },
+    ];
+  }
+  const db = await datenbank();
+  const { data, error } = await db
+    .from("wochenberichte")
+    .select("id, von, bis, anzahl, statistik, text, status")
+    .order("erstellt_am", { ascending: false })
+    .limit(12);
+  if (error) throw new Error(error.message);
+  return data as Wochenbericht[];
+}
+
+export async function kiBereit(): Promise<boolean> {
+  if (vorschauAktiv()) return false;
+  const db = await datenbank();
+  const { data } = await db.rpc("ki_bereit");
+  return data === true;
+}

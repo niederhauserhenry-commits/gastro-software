@@ -14,7 +14,7 @@ const kachelListe = [
   { schluessel: "reservierungen", modul: "reservierungen", ziel: "/reservierungen" },
   { schluessel: "gaeste", modul: "gaeste", ziel: "/gaeste" },
   { schluessel: "warteliste", modul: "warteliste", ziel: "/warteliste" },
-  { schluessel: "feedback", modul: "feedback", ziel: null },
+  { schluessel: "feedback", modul: "feedback", ziel: "/feedback" },
   { schluessel: "einstellungen", modul: null, ziel: "/einstellungen" },
 ] as const;
 
